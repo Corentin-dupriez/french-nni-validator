@@ -1,4 +1,5 @@
 import re
+from recover_city_codes import call_geo_api
 
 def national_security_number_validator(ns_number_with_key: str|int):
     """Function that takes the national security number with key (15 chars).
@@ -33,7 +34,10 @@ def national_security_number_validator(ns_number_with_key: str|int):
 
 def validate_with_no_key(ns_number: str) -> bool: 
     """Function that takes the national security number (without key)
-    and compares it to the regex for validation
+    and compares it to the regex for validation.
+    
+    After regex validation, the function calls find_city_code to find if the region and 
+    city codes exist.
 
     Args:
         ns_number (str): String of the national security number (13 chars)
@@ -44,9 +48,36 @@ def validate_with_no_key(ns_number: str) -> bool:
     regex = r"^([128])[00-99]{2}([01-12]{2}|[20-99]{2})([01-99]{2})\d{6}$|^([128])[00-99]{2}([01-12]{2})(2[AB])([01-99]{2})\d{4}$"
     
     if not re.match(regex, ns_number): 
-        return False
+        raise ValueError('The format is incorrect')
+    
+    find_city_code(ns_number)
     
     return True
+
+
+def find_city_code(ns_number: str) -> str: 
+    """Function that calls the geo API from French government (via call_geo_api)
+    to see if the geographical information of the individual exists
+
+    Args:
+        ns_number (str): The national security number as a string
+
+    Raises:
+        ValueError: An error if the city code doesn't exist
+        ValueError: An error if any other error is encountered while calling the geo API
+
+    Returns:
+        str: The city name
+    """
+    code = ns_number[5:10]
+    response = call_geo_api(code)
+    
+    if response[0] == 404: 
+        raise ValueError('The city code is incorrect')
+    elif response[0] == 200: 
+        return response[1]
+    else: 
+        raise ValueError('Technical error')
 
 
 def calculate_key(nir: str|int) -> str: 
@@ -121,3 +152,5 @@ def national_security_number_key_generator(ns_number: int|str) -> str:
         key = calculate_key(calculated_nir)
         
     return str(ns_number) + key
+
+print(national_security_number_validator('238037700000185'))
