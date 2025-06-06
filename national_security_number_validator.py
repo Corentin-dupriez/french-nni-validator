@@ -152,5 +152,3 @@ def national_security_number_key_generator(ns_number: int|str) -> str:
         key = calculate_key(calculated_nir)
         
     return str(ns_number) + key
-
-print(national_security_number_validator('238037700000185'))
